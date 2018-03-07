@@ -1,0 +1,9 @@
+<?xml version="1.0"?>
+<model xmlns="http://www.neeveresearch.com/schema/x-ddl"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+	<env>
+		<nv>
+			<loglevel>INFO</loglevel>
+		</nv>
+	</env>
+</model>
