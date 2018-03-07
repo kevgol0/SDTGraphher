@@ -1,4 +1,4 @@
-#SDTGrapher
+# SDTGrapher
 A graphing UI for the Stats Dump Tool
 
 ## uses JFreeChart
