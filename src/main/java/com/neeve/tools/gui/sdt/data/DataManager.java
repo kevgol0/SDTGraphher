@@ -24,7 +24,10 @@ import java.util.concurrent.ConcurrentHashMap;
 
 
 
+import com.neeve.root.RootConfig.ObjectConfig;
 import com.neeve.tools.gui.sdt.view.graphpanel.GraphPanel;
+import com.neeve.trace.Tracer;
+import com.neeve.trace.Tracer.Level;
 
 
 
@@ -36,6 +39,7 @@ public class DataManager
 
 	private int CONFIGURED_TEST_DATASET_POINT_NUMBER = 1000;
 
+	private Tracer _logger;
 
 
 	public static class DMHelper
@@ -54,6 +58,7 @@ public class DataManager
 	{
 		_datasets = new ConcurrentHashMap<>();
 		buildExampleDataSets();
+		_logger = ObjectConfig.createTracer(ObjectConfig.get(getClass().getSimpleName()));
 	}
 
 
@@ -112,11 +117,21 @@ public class DataManager
 	/**
 	 * 
 	 */
-	public void update(String name_)
+	public void update(String name_, Boolean isDisplayed_)
 	{
 		System.out.println("Generate graph for: " + name_);
-		GraphPanel.getInstance().update(_datasets.get(name_));
-
+		GraphPanel gp = GraphPanel.getInstance();
+		if (isDisplayed_)
+		{
+			DataSet<Integer> ds = _datasets.get(name_);
+			gp.addDataSet(ds);
+		}
+		else
+		{
+			_logger.log("Removed: " + name_, Level.WARNING);
+			gp.removeDataSet(_datasets.get(name_));
+		}
+		gp.update();
 	}
 
 

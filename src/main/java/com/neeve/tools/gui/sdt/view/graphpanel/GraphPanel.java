@@ -19,11 +19,10 @@ package com.neeve.tools.gui.sdt.view.graphpanel;
 
 
 import java.awt.Color;
-import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
 import java.util.Iterator;
+import java.util.concurrent.ConcurrentHashMap;
 
 
 
@@ -31,11 +30,11 @@ import javax.swing.JPanel;
 
 
 
-import org.jfree.chart.ChartFactory;
 import org.jfree.chart.ChartPanel;
 import org.jfree.chart.JFreeChart;
 import org.jfree.chart.axis.NumberAxis;
 import org.jfree.chart.plot.XYPlot;
+import org.jfree.chart.renderer.xy.StandardXYItemRenderer;
 import org.jfree.chart.renderer.xy.XYSplineRenderer;
 import org.jfree.data.xy.XYSeries;
 import org.jfree.data.xy.XYSeriesCollection;
@@ -44,7 +43,6 @@ import org.jfree.data.xy.XYSeriesCollection;
 
 import com.neeve.tools.gui.sdt.data.DataSet;
 import com.neeve.tools.gui.sdt.view.ColorPallette;
-import com.neeve.tools.gui.sdt.view.MainWindow;
 import com.neeve.tools.gui.sdt.view.SDTPanel;
 
 
@@ -60,6 +58,9 @@ public class GraphPanel extends SDTPanel implements ActionListener, MouseListene
 	private GraphControls	_controls;
 	private JPanel			_theGraph;
 	private String			_chartTitle;
+
+	private ConcurrentHashMap<String, DataSet<Integer>>	_axis;
+	private JFreeChart									_theChart;
 
 
 
@@ -81,6 +82,7 @@ public class GraphPanel extends SDTPanel implements ActionListener, MouseListene
 		setBackground(ColorPallette.SlateGrey);
 		_controls = new GraphControls(100);
 		_theGraph = new JPanel();
+		_axis = new ConcurrentHashMap<>();
 		add(_controls);
 		_chartTitle = "Not Yet Set";
 	}
@@ -158,6 +160,7 @@ public class GraphPanel extends SDTPanel implements ActionListener, MouseListene
 		//Map the data to the appropriate axis
 		plot.mapDatasetToRangeAxis(0, 0);
 		plot.mapDatasetToRangeAxis(1, 1);
+		plot.mapDatasetToRangeAxis(2, 2);
 
 		//generate the chart
 		JFreeChart chart = new JFreeChart("MyPlot", getFont(), plot, true);
@@ -169,39 +172,88 @@ public class GraphPanel extends SDTPanel implements ActionListener, MouseListene
 		_theGraph = new ChartPanel(chart);
 		_theGraph = chartPanel;
 		add(_theGraph);
-		this.setPreferredSize(this.getPreferredSize());
 	}
 
 
 
 
 
-	public void update(DataSet<Integer> series1_)
+	public void update()
 	{
-		if (series1_ == null)
-			return;
-
-		XYSeries series1 = new XYSeries(series1_.getSeriesName());
+		String key;
+		Iterator<String> itr = this._axis.keySet().iterator();
+		XYSeriesCollection dataset;
 		int cntr = 0;
-		int i;
-		Iterator<Integer> itr = series1_.iterator();
+		DataSet<Integer> ds;
+		XYPlot plot = new XYPlot();
+		plot.setRangeAxis(0, new NumberAxis("Latency 1"));
+		plot.setRangeAxis(1, new NumberAxis("Latency 2"));
+		plot.setDomainAxis(new NumberAxis("Time"));
 		while (itr.hasNext())
 		{
-			i = itr.next();
-			series1.add(cntr++, i);
+			key = itr.next();
+			ds = _axis.get(key);
+			dataset = ds.getXYSeriesCollection();
+			plot.setDataset(cntr, dataset);
+			plot.setRenderer(cntr, new StandardXYItemRenderer(StandardXYItemRenderer.LINES));
+			plot.mapDatasetToRangeAxis(cntr, cntr % 2);
+			cntr += 1;
 		}
-		XYSeriesCollection dataset = new XYSeriesCollection();
-		dataset.addSeries(series1);
-		JFreeChart chart = ChartFactory.createScatterPlot(
-				_chartTitle,
-				"X-Axis", "Y-Axis", dataset);
+
+		_theChart = new JFreeChart(_chartTitle, getFont(), plot, true);
 		remove(_theGraph);
-		_theGraph = new ChartPanel(chart);
+		_theGraph = new ChartPanel(_theChart);
 		add(_theGraph);
-		_theGraph.repaint();
-		_theGraph.revalidate();
-		this.revalidate();
-		this.repaint();
-		_theGraph.paintComponents(this.getGraphics());
 	}
+
+
+
+
+
+	public void setChartTitle(String title_)
+	{
+		_theChart.setTitle(title_);
+	}
+
+
+
+
+
+	public void adjustGraphBounds(int min_, int max_)
+	{
+		Iterator<String> itr = _axis.keySet().iterator();
+		String key;
+		DataSet<Integer> ds;
+		while (itr.hasNext())
+		{
+			key = itr.next();
+			ds = _axis.get(key);
+			ds.getDataSeries(min_, max_);
+		}
+	}
+
+
+
+
+
+	/**
+	 * 
+	 */
+	public void addDataSet(DataSet<Integer> series_)
+	{
+		_axis.putIfAbsent(series_.getSeriesName(), series_);
+	}
+
+
+
+
+
+	/**
+	 * 
+	 */
+	public void removeDataSet(DataSet<Integer> series_)
+	{
+		_axis.remove(series_.getSeriesName());
+	}
+
 }

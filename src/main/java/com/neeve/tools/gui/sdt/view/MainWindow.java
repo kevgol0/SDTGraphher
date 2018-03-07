@@ -49,7 +49,7 @@ public class MainWindow extends JFrame
 	private static final int	FROM_BOTTOM			= 20;
 	private static final int	FROM_RIGHT			= 0;
 	private static final int	MIN_WIDTH			= 800;
-	private static final int	MIN_HEIGHT			= 500;
+	private static final int	MIN_HEIGHT			= 600;
 
 	private int LEFT_PANNEL_WIDTH = 250;
 
@@ -57,10 +57,10 @@ public class MainWindow extends JFrame
 	//
 	private Tracer _logger;
 
-	@Configured(property = "main_starting_width", defaultValue = "400")
+	@Configured(property = "main_starting_width", defaultValue = "800")
 	private int _width = MIN_WIDTH;
 
-	@Configured(property = "main_starting_height", defaultValue = "400")
+	@Configured(property = "main_starting_height", defaultValue = "600")
 	private int _height = MIN_HEIGHT;
 
 
@@ -132,7 +132,6 @@ public class MainWindow extends JFrame
 				_panel.setSize(w - FROM_RIGHT, h - FROM_BOTTOM);
 				_metricsChooser.setBounds(5, 90, LEFT_PANNEL_WIDTH, h - 120);
 				_grapher.setBounds(LEFT_PANNEL_WIDTH + 10, 5, w - (LEFT_PANNEL_WIDTH + 20), h - 35);
-				System.out.println(getWidth() + "," + getHeight());
 			}
 		});
 	}

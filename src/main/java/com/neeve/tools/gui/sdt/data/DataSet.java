@@ -24,12 +24,27 @@ import java.util.List;
 
 
 
+import org.jfree.data.xy.XYSeries;
+import org.jfree.data.xy.XYSeriesCollection;
+
+
+
+import com.neeve.tools.gui.sdt.view.graphpanel.VERTICAL_ACCESS;
+
+
+
 
 
 public class DataSet<T extends Number>
 {
-	private List<T>	_data;
-	private String	_seriesName;
+
+	private List<T>				_data;
+	private String				_seriesName;
+	private XYSeries			_xySeries;
+	private XYSeriesCollection	_xyDataset;
+	private Boolean				_displayed;
+
+	private int _axis;
 
 
 
@@ -42,6 +57,8 @@ public class DataSet<T extends Number>
 	{
 		_data = new ArrayList<T>();
 		setSeriesName(name_);
+		_xySeries = new XYSeries(name_);
+		setAxis(1);
 	}
 
 
@@ -143,9 +160,100 @@ public class DataSet<T extends Number>
 	/**
 	 * 
 	 */
+	public final int getAxis()
+	{
+		return _axis;
+	}
+
+
+
+
+
+	/**
+	 * 
+	 */
+	public final void setAxis(int axis_)
+	{
+		_axis = axis_;
+	}
+
+
+
+
+
+	/**
+	 * 
+	 */
+	public final Boolean getDisplayed()
+	{
+		return _displayed;
+	}
+
+
+
+
+
+	/**
+	 * 
+	 */
+	public final void setDisplayed(Boolean displayed_)
+	{
+		_displayed = displayed_;
+	}
+
+
+
+
+
+	/**
+	 * 
+	 */
 	public final void setSeriesName(String seriesName_)
 	{
 		_seriesName = seriesName_;
 	}
+
+
+
+
+
+	public final XYSeries getDataSeries()
+	{
+		return getDataSeries(0, size());
+	}
+
+
+
+
+
+	public final XYSeries getDataSeries(int min_, int max_)
+	{
+		_xySeries.clear();
+		int cntr = 0;
+		for (int i = min_; i < max_; i++)
+			_xySeries.add(cntr++, get(i));
+		return _xySeries;
+	}
+
+
+
+
+
+	public final XYSeriesCollection getXYSeriesCollection()
+	{
+		return getXYSeriesCollection(0, size());
+	}
+
+
+
+
+
+	public final XYSeriesCollection getXYSeriesCollection(int max_, int min_)
+	{
+		_xyDataset = new XYSeriesCollection();
+		_xyDataset.addSeries(getDataSeries(max_, min_));
+		return _xyDataset;
+	}
+
 
 }

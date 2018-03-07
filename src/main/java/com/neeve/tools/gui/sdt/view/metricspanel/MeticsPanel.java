@@ -205,10 +205,9 @@ public class MeticsPanel extends SDTPanel
 	{
 		if (entry_ == null)
 			return;
-		entry_.setDisaplayed(!entry_.getDisaplayed());
+		boolean displayed = !entry_.getDisaplayed();
+		entry_.setDisaplayed(displayed);
+		DataManager.getInstance().update(entry_.getName(), displayed);
 		_tableModel.fireTableDataChanged();
-
-		if (entry_.getDisaplayed())
-			DataManager.getInstance().update(entry_.getName());
 	}
 }
