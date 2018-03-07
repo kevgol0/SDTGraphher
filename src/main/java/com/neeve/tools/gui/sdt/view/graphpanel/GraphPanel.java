@@ -44,6 +44,7 @@ import org.jfree.data.xy.XYSeriesCollection;
 
 import com.neeve.tools.gui.sdt.data.DataSet;
 import com.neeve.tools.gui.sdt.view.ColorPallette;
+import com.neeve.tools.gui.sdt.view.MainWindow;
 import com.neeve.tools.gui.sdt.view.SDTPanel;
 
 
@@ -58,7 +59,7 @@ public class GraphPanel extends SDTPanel implements ActionListener, MouseListene
 
 	private GraphControls	_controls;
 	private JPanel			_theGraph;
-
+	private String			_chartTitle;
 
 
 
@@ -81,7 +82,7 @@ public class GraphPanel extends SDTPanel implements ActionListener, MouseListene
 		_controls = new GraphControls(100);
 		_theGraph = new JPanel();
 		add(_controls);
-		add(_theGraph);
+		_chartTitle = "Not Yet Set";
 	}
 
 
@@ -111,90 +112,6 @@ public class GraphPanel extends SDTPanel implements ActionListener, MouseListene
 	public static GraphPanel getInstance()
 	{
 		return GraphPanelHelper._instance;
-	}
-
-
-
-
-
-	/**
-	 * (non-Javadoc)
-	 * 
-	 * @see java.awt.event.ActionListener#actionPerformed(java.awt.event.ActionEvent)
-	 */
-	@Override
-	public void actionPerformed(ActionEvent e_)
-	{
-	}
-
-
-
-
-
-	/**
-	 * (non-Javadoc)
-	 * 
-	 * @see java.awt.event.MouseListener#mouseClicked(java.awt.event.MouseEvent)
-	 */
-	@Override
-	public void mouseClicked(MouseEvent e_)
-	{
-	}
-
-
-
-
-
-	/**
-	 * (non-Javadoc)
-	 * 
-	 * @see java.awt.event.MouseListener#mousePressed(java.awt.event.MouseEvent)
-	 */
-	@Override
-	public void mousePressed(MouseEvent e_)
-	{
-	}
-
-
-
-
-
-	/**
-	 * (non-Javadoc)
-	 * 
-	 * @see java.awt.event.MouseListener#mouseReleased(java.awt.event.MouseEvent)
-	 */
-	@Override
-	public void mouseReleased(MouseEvent e_)
-	{
-	}
-
-
-
-
-
-	/**
-	 * (non-Javadoc)
-	 * 
-	 * @see java.awt.event.MouseListener#mouseEntered(java.awt.event.MouseEvent)
-	 */
-	@Override
-	public void mouseEntered(MouseEvent e_)
-	{
-	}
-
-
-
-
-
-	/**
-	 * (non-Javadoc)
-	 * 
-	 * @see java.awt.event.MouseListener#mouseExited(java.awt.event.MouseEvent)
-	 */
-	@Override
-	public void mouseExited(MouseEvent e_)
-	{
 	}
 
 
@@ -276,10 +193,15 @@ public class GraphPanel extends SDTPanel implements ActionListener, MouseListene
 		XYSeriesCollection dataset = new XYSeriesCollection();
 		dataset.addSeries(series1);
 		JFreeChart chart = ChartFactory.createScatterPlot(
-				"Boys VS Girls weight comparison chart",
+				_chartTitle,
 				"X-Axis", "Y-Axis", dataset);
 		remove(_theGraph);
 		_theGraph = new ChartPanel(chart);
 		add(_theGraph);
+		_theGraph.repaint();
+		_theGraph.revalidate();
+		this.revalidate();
+		this.repaint();
+		_theGraph.paintComponents(this.getGraphics());
 	}
 }
