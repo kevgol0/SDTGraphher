@@ -42,6 +42,7 @@ import org.jfree.data.xy.XYSeriesCollection;
 
 
 import com.neeve.tools.gui.sdt.data.DataSet;
+import com.neeve.tools.gui.sdt.data.DataSet.PERCENTILE;
 import com.neeve.tools.gui.sdt.view.ColorPallette;
 import com.neeve.tools.gui.sdt.view.SDTPanel;
 
@@ -49,7 +50,7 @@ import com.neeve.tools.gui.sdt.view.SDTPanel;
 
 
 
-public class GraphPanel extends SDTPanel implements ActionListener, MouseListener
+public class GraphPanel extends SDTPanel
 {
 
 	private static final long serialVersionUID = 1L;
@@ -131,7 +132,7 @@ public class GraphPanel extends SDTPanel implements ActionListener, MouseListene
 		XYSeries series1 = new XYSeries(series1_.getSeriesName());
 		int cntr = 0;
 		int i;
-		Iterator<Integer> itr = series1_.iterator();
+		Iterator<Integer> itr = series1_.iterator(PERCENTILE.pct50);
 		while (itr.hasNext())
 		{
 			i = itr.next();
@@ -193,7 +194,7 @@ public class GraphPanel extends SDTPanel implements ActionListener, MouseListene
 		{
 			key = itr.next();
 			ds = _axis.get(key);
-			dataset = ds.getXYSeriesCollection();
+			dataset = ds.getXYSeriesCollection(PERCENTILE.pct50);
 			plot.setDataset(cntr, dataset);
 			plot.setRenderer(cntr, new StandardXYItemRenderer(StandardXYItemRenderer.LINES));
 			plot.mapDatasetToRangeAxis(cntr, cntr % 2);
@@ -228,7 +229,7 @@ public class GraphPanel extends SDTPanel implements ActionListener, MouseListene
 		{
 			key = itr.next();
 			ds = _axis.get(key);
-			ds.getDataSeries(min_, max_);
+			ds.getDataSeries(PERCENTILE.pct50, min_, max_);
 		}
 	}
 

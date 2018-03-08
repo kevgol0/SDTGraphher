@@ -18,13 +18,39 @@ package com.neeve.tools.gui.sdt.data;
 
 
 
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileReader;
+import java.lang.reflect.Method;
+import java.text.MessageFormat;
 import java.util.Iterator;
+import java.util.Properties;
 import java.util.Random;
 import java.util.concurrent.ConcurrentHashMap;
 
 
 
+import com.neeve.lang.XIterator;
+import com.neeve.ods.IStoreObject;
+import com.neeve.ods.IStoreObjectFactory;
+import com.neeve.ods.StoreObjectFactoryRegistry;
+import com.neeve.rog.IRogMessage;
+import com.neeve.rog.log.RogLog;
+import com.neeve.rog.log.RogLogFactory;
+import com.neeve.rog.log.RogLogQuery;
+import com.neeve.rog.log.RogLogQueryEngine;
+import com.neeve.rog.log.RogLogReader;
+import com.neeve.rog.log.RogLogRepository;
+import com.neeve.rog.log.RogLogResultSet;
 import com.neeve.root.RootConfig.ObjectConfig;
+import com.neeve.server.mon.SrvMonAppEngineStats;
+import com.neeve.server.mon.SrvMonAppStats;
+import com.neeve.server.mon.SrvMonFactory;
+import com.neeve.server.mon.SrvMonHeartbeatMessage;
+import com.neeve.server.mon.SrvMonHeartbeatTracer;
+import com.neeve.server.mon.SrvMonIntHistogram;
+import com.neeve.server.mon.SrvMonIntSeries;
+import com.neeve.tools.gui.sdt.data.DataSet.PERCENTILE;
 import com.neeve.tools.gui.sdt.view.graphpanel.GraphPanel;
 import com.neeve.trace.Tracer;
 import com.neeve.trace.Tracer.Level;
@@ -41,6 +67,8 @@ public class DataManager
 
 	private Tracer _logger;
 
+	//The ROG transaction log
+	private RogLog _persister;
 
 	public static class DMHelper
 	{
@@ -57,8 +85,198 @@ public class DataManager
 	private DataManager()
 	{
 		_datasets = new ConcurrentHashMap<>();
-		buildExampleDataSets();
 		_logger = ObjectConfig.createTracer(ObjectConfig.get(getClass().getSimpleName()));
+	}
+
+
+
+
+
+	public void openTLogFile(File file_)
+	{
+
+		String name = file_.getName().substring(0, file_.getName().length() - 4);
+		Properties props = new Properties();
+		props.setProperty("detactedPersist", "false");
+		props.setProperty("storeRoot", file_.getParent());
+		props.setProperty("autoRepair", String.valueOf(false));
+		props.setProperty("logMode", "r");
+
+		try
+		{
+			_persister = RogLogFactory.createLog(name, props);
+
+			final File factoriesFile = new File(file_.getParent(), name + ".factories");
+			if (factoriesFile.exists())
+			{
+				readFactories(factoriesFile);
+			}
+			_persister.open();
+
+			RogLogQueryEngine queryEngine = RogLogFactory.createQueryEngine();
+			queryEngine.setAutoIndexing(false);
+			RogLogRepository repo = _persister.asRepository();
+			repo.open();
+			queryEngine.addRepository(repo, name);
+
+			final RogLogQuery query = queryEngine.createQuery(
+					"SELECT * from logs WHERE simpleClassName='SrvMonHeartbeatMessage'");
+			final RogLogResultSet results = queryEngine.execute(query);
+
+			StringBuilder sb = new StringBuilder();
+			SrvMonHeartbeatTracer statsReader = new SrvMonHeartbeatTracer();
+			while (results.next())
+			{
+				sb.setLength(0);
+				IStoreObject object = results.getLogEntry().getObject();
+				if (object instanceof IRogMessage)
+				{
+					SrvMonHeartbeatMessage srvMessage = (SrvMonHeartbeatMessage) object;
+					statsReader.printStats(srvMessage, sb);
+					XIterator<SrvMonAppStats> appStatsIt = srvMessage.getAppsStatsIterator();
+					while (appStatsIt.hasNext())
+					{
+						SrvMonAppStats appStats = appStatsIt.next();
+						System.out.println(appStats.toString());
+						SrvMonAppEngineStats aes = appStats.getEngineStats();
+						SrvMonIntSeries commiutSend = aes.getCommitSendLatencies();
+						SrvMonIntHistogram hist = commiutSend.getRunningStats();
+						System.out.println(
+								MessageFormat.format("{0}, {1}, {2}",
+										hist.getMedian(),
+										hist.getPct75(),
+										hist.getPct90()));
+						/*formatSeriesForPrint("", "mpproc", aepEngineStats.getMsgPreProcLatencies(), sb);
+						formatSeriesForPrint("", "mproc", aepEngineStats.getMsgProcessingLatencies(), sb);
+						formatSeriesForPrint("", "msend", aepEngineStats.getMsgSendLatencies(), sb);
+						formatSeriesForPrint("", "msendc", aepEngineStats.getMsgSendCoreLatencies(), sb);
+						formatSeriesForPrint("", "cstart", aepEngineStats.getCommitStartLatencies(), sb);
+						formatSeriesForPrint("", "csend", aepEngineStats.getCommitSendLatencies(), sb);
+						formatSeriesForPrint("", "cstore", aepEngineStats.getCommitStoreLatencies(), sb);
+						formatSeriesForPrint("", "cepilo", aepEngineStats.getCommitEpilogueLatencies(), sb);
+						formatSeriesForPrint("", "cfull", aepEngineStats.getCommitFullLatencies(), sb);
+						formatSeriesForPrint("", "tleg1", aepEngineStats.getTransactionLeg1ProcessingTimes(), sb);
+						formatSeriesForPrint("", "tleg2", aepEngineStats.getTransactionLeg2ProcessingTimes(), sb);
+						formatSeriesForPrint("", "tleg3", aepEngineStats.getTransactionLeg3ProcessingTimes(), sb);
+						formatSeriesForPrint("", "inout", aepEngineStats.getInOutLatencies(), sb);
+						formatSeriesForPrint("", "inack", aepEngineStats.getInAckLatencies(), sb);*/
+
+					}
+				}
+			}
+
+		}
+		catch (Exception e_)
+		{
+			_logger.log(e_.toString(), Level.SEVERE);
+		}
+	}
+
+
+
+
+
+	/**
+	 * Read the '.factories' from the location where the transaction log file is
+	 * locate. Each of the className in the file is validated and registered
+	 * with the RogLogReader.
+	 * 
+	 * @param factoriesFile
+	 *            - Name of the ".factories' file, which is named similar to the
+	 *            name of the stats tlog file
+	 * @throws Exception
+	 *             - If the ".factories" file cannot be read or does not exists.
+	 */
+	final private void readFactories(File factoriesFile) throws Exception
+	{
+		if (factoriesFile.exists())
+		{
+			final BufferedReader br = new BufferedReader(new FileReader(factoriesFile));
+			try
+			{
+				String line;
+				while ((line = br.readLine()) != null)
+				{
+					registerFactory(line.trim());
+					System.out.println("Factory: " + line);
+				}
+			}
+			finally
+			{
+				br.close();
+			}
+			StoreObjectFactoryRegistry.getInstance().registerObjectFactory(SrvMonFactory.class.getName());
+		}
+		else
+		{
+			throw new Exception("File not found: " + factoriesFile);
+		}
+
+	}
+
+
+
+
+
+	/**
+	 * Validate the className and register factory with RoglogReader. Class is
+	 * validated using reflection if it contains the create(Properties) method.
+	 * If a valid factory is found is it registered with Reader, if not
+	 * appropriate exception is thrown
+	 * 
+	 * @param className
+	 *            - Name of the factory class read from ".factories" file
+	 * @throws Exception
+	 *             -
+	 */
+	final private void registerFactory(String className) throws Exception
+	{
+		final Class<?> clazz = Class.forName(className);
+		Method createMethod = null;
+		try
+		{
+			Class<?>[] parameterTypes = new Class[1];
+			parameterTypes[0] = Class.forName("java.util.Properties");
+			createMethod = clazz.getMethod("create", parameterTypes);
+		}
+		catch (ClassNotFoundException cne)
+		{
+			throw new Exception("Failed to load java.util.Properties during instantiation of factory class");
+		}
+		catch (SecurityException se)
+		{
+			throw new Exception("Invalid factory class '" + className + "' access to create method is denied");
+		}
+		catch (NoSuchMethodException nsme)
+		{
+			throw new Exception("Invalid factory class '" + className + "' create() not found");
+		}
+
+		IStoreObjectFactory factory = null;
+		try
+		{
+			try
+			{
+				Object[] parameters = new Object[1];
+				parameters[0] = null;
+				factory = (IStoreObjectFactory) createMethod.invoke(null, parameters);
+				if (null == factory)
+				{
+					throw new Exception(
+							"Invalid factory class '" + className + "' create() method returned a null object");
+				}
+				RogLogReader.registerFactory(factory);
+			}
+			catch (ClassCastException ce)
+			{
+				throw new Exception(
+						"Invalid factory class '" + className + "' create() did not return a valid factory");
+			}
+		}
+		catch (IllegalAccessException ile)
+		{
+			throw new Exception("Invalid factory class '" + className + "'");
+		}
 	}
 
 
@@ -92,8 +310,8 @@ public class DataManager
 
 			for (int i = 0; i < CONFIGURED_TEST_DATASET_POINT_NUMBER; i++)
 			{
-				ds1.add(rand.nextInt(1000));
-				ds2.add(rand.nextInt(1000));
+				ds1.add(PERCENTILE.pct50, rand.nextInt(1000));
+				ds2.add(PERCENTILE.pct50, rand.nextInt(1000));
 			}
 		}
 	}

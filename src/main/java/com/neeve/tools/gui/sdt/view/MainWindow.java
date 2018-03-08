@@ -32,7 +32,6 @@ import javax.swing.JFrame;
 
 import com.neeve.cli.annotations.Configured;
 import com.neeve.root.RootConfig.ObjectConfig;
-import com.neeve.tools.gui.sdt.data.DataManager;
 import com.neeve.tools.gui.sdt.view.graphpanel.GraphPanel;
 import com.neeve.tools.gui.sdt.view.metricspanel.MeticsPanel;
 import com.neeve.trace.Tracer;

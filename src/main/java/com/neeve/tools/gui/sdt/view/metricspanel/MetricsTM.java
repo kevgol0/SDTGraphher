@@ -35,7 +35,6 @@ import com.neeve.tools.gui.sdt.view.MetricEntry;
 
 
 
-
 class TempMetricHolder
 {
 	private int			_index;
