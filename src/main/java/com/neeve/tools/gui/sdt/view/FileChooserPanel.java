@@ -72,7 +72,7 @@ public class FileChooserPanel extends SDTPanel
 		x = ((width_ / 2) - (_fileLabel.getPreferredSize().width / 2));
 		y += (PADDING + _fileChooser.getPreferredSize().height);
 		_fileLabel.setBounds(1, y, width_, _fileLabel.getPreferredSize().height);
-
+		_fileLabel.setForeground(ColorPallette.White);
 		add(_fileChooser);
 		add(_fileLabel);
 		_fileChooser.addActionListener(this);
@@ -108,14 +108,18 @@ public class FileChooserPanel extends SDTPanel
 			if (BTN_FC_NAME.equals(src.getName()))
 			{
 				JFileChooser chooser = new JFileChooser();
-				FileNameExtensionFilter filter = new FileNameExtensionFilter("Text & CSV", "txt", "csv");
+				FileNameExtensionFilter filter = new FileNameExtensionFilter("Logs", "log");
 				chooser.setFileFilter(filter);
 				int rv = chooser.showOpenDialog(this);
 				if (rv == 0)
 				{
 					File selected = chooser.getSelectedFile();
-					MainWindow.getInstance().setTitle(selected.getName());
+					String name = selected.getName();
+					_fileLabel.setText(name);
+					_fileLabel.repaint();
+					MainWindow.getInstance().setTitle(name);
 					DataManager.getInstance().openTLogFile(selected);
+					setBackground(ColorPallette.DarkGreen);
 				}
 			}
 		}

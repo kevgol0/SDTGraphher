@@ -50,8 +50,8 @@ import com.neeve.server.mon.SrvMonHeartbeatMessage;
 import com.neeve.server.mon.SrvMonHeartbeatTracer;
 import com.neeve.server.mon.SrvMonIntHistogram;
 import com.neeve.server.mon.SrvMonIntSeries;
-import com.neeve.tools.gui.sdt.data.DataSet.PERCENTILE;
 import com.neeve.tools.gui.sdt.view.graphpanel.GraphPanel;
+import com.neeve.tools.gui.sdt.view.metricspanel.MetricsPanel;
 import com.neeve.trace.Tracer;
 import com.neeve.trace.Tracer.Level;
 
@@ -61,7 +61,7 @@ import com.neeve.trace.Tracer.Level;
 
 public class DataManager
 {
-	private ConcurrentHashMap<String, DataSet<Integer>> _datasets;
+	private ConcurrentHashMap<String, DatasetArrays> _datasets;
 
 	private int CONFIGURED_TEST_DATASET_POINT_NUMBER = 1000;
 
@@ -86,6 +86,7 @@ public class DataManager
 	{
 		_datasets = new ConcurrentHashMap<>();
 		_logger = ObjectConfig.createTracer(ObjectConfig.get(getClass().getSimpleName()));
+		//buildExampleDataSets();
 	}
 
 
@@ -109,7 +110,12 @@ public class DataManager
 			final File factoriesFile = new File(file_.getParent(), name + ".factories");
 			if (factoriesFile.exists())
 			{
+				_logger.log("Facotries:" +  factoriesFile.getName(), Level.SEVERE);
 				readFactories(factoriesFile);
+			}
+			else
+			{
+				_logger.log("Facotries do NOT exist!", Level.SEVERE);
 			}
 			_persister.open();
 
@@ -141,11 +147,15 @@ public class DataManager
 						SrvMonAppEngineStats aes = appStats.getEngineStats();
 						SrvMonIntSeries commiutSend = aes.getCommitSendLatencies();
 						SrvMonIntHistogram hist = commiutSend.getRunningStats();
-						System.out.println(
-								MessageFormat.format("{0}, {1}, {2}",
-										hist.getMedian(),
-										hist.getPct75(),
-										hist.getPct90()));
+						parseSeries("mpproc", aes.getMsgPreProcLatencies());
+						parseSeries("mproc", aes.getMsgProcessingLatencies());
+						parseSeries("inout", aes.getInOutLatencies());
+						parseSeries("cstart", aes.getCommitStartLatencies());
+						parseSeries("tleg1", aes.getTransactionLeg1ProcessingTimes());
+						parseSeries("tleg2", aes.getTransactionLeg2ProcessingTimes());
+						parseSeries("tleg3", aes.getTransactionLeg3ProcessingTimes());
+						
+						
 						/*formatSeriesForPrint("", "mpproc", aepEngineStats.getMsgPreProcLatencies(), sb);
 						formatSeriesForPrint("", "mproc", aepEngineStats.getMsgProcessingLatencies(), sb);
 						formatSeriesForPrint("", "msend", aepEngineStats.getMsgSendLatencies(), sb);
@@ -172,6 +182,31 @@ public class DataManager
 		}
 	}
 
+	private void parseSeries(String name_, SrvMonIntSeries series_)
+	{
+		String fname = name_+"-r";
+		DatasetArrays ds_r = _datasets.get(fname);
+		
+		if ( ds_r == null )
+		{
+			ds_r = new DatasetArrays(fname);
+			_datasets.put(fname, ds_r);
+			MetricsPanel.getInstance().addToTable(fname);
+		}
+		
+		
+		fname=name_+"-i";
+		DatasetArrays ds_i = _datasets.get(fname);
+		if ( ds_i == null )
+		{
+			ds_i = new DatasetArrays(fname);
+			_datasets.put(fname, ds_i);
+			MetricsPanel.getInstance().addToTable(fname);
+		}
+		
+		ds_r.add(series_.getRunningStats());
+		ds_i.add(series_.getIntervalStats());
+	}
 
 
 
@@ -198,7 +233,6 @@ public class DataManager
 				while ((line = br.readLine()) != null)
 				{
 					registerFactory(line.trim());
-					System.out.println("Factory: " + line);
 				}
 			}
 			finally
@@ -294,16 +328,16 @@ public class DataManager
 		};
 
 
-		DataSet<Integer> ds1;
-		DataSet<Integer> ds2;
+		DatasetArrays ds1;
+		DatasetArrays ds2;
 		Random rand = new Random();
 		String keyI, keyR;
 		for (String key : strs)
 		{
 			keyI = key + "_i";
 			keyR = key + "_r";
-			ds1 = new DataSet<Integer>(keyI);
-			ds2 = new DataSet<Integer>(keyR);
+			ds1 = new DatasetArrays(keyI);
+			ds2 = new DatasetArrays(keyR);
 
 			_datasets.put(keyI, ds1);
 			_datasets.put(keyR, ds2);
@@ -341,7 +375,7 @@ public class DataManager
 		GraphPanel gp = GraphPanel.getInstance();
 		if (isDisplayed_)
 		{
-			DataSet<Integer> ds = _datasets.get(name_);
+			DatasetArrays ds = _datasets.get(name_);
 			gp.addDataSet(ds);
 		}
 		else

@@ -124,13 +124,6 @@ public class MetricsTM extends AbstractTableModel
 		_filteredData = new LinkedList<MetricEntry>();
 		_filter = "";
 		_tmpMetric = new TempMetricHolder(-1, null);
-
-
-		Iterator<String> itr = DataManager.getInstance().getKeysets();
-		while (itr.hasNext())
-		{
-			_data.add(new MetricEntry(itr.next()));
-		}
 		setFilter(null);
 	}
 
@@ -289,4 +282,12 @@ public class MetricsTM extends AbstractTableModel
 		return _filteredData.get(row_);
 	}
 
+	
+	
+	
+	public void addMetricEntry(String name_, int interval_, int running_)
+	{
+		_data.add(new MetricEntry(name_));
+		fireTableDataChanged();;
+	}
 }

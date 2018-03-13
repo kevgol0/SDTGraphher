@@ -34,6 +34,7 @@ import javax.swing.JTextField;
 
 import com.neeve.tools.gui.sdt.data.DataManager;
 import com.neeve.tools.gui.sdt.view.ColorPallette;
+import com.neeve.tools.gui.sdt.view.MainWindow;
 import com.neeve.tools.gui.sdt.view.MetricEntry;
 import com.neeve.tools.gui.sdt.view.SDTPanel;
 
@@ -41,7 +42,7 @@ import com.neeve.tools.gui.sdt.view.SDTPanel;
 
 
 
-public class MeticsPanel extends SDTPanel
+public class MetricsPanel extends SDTPanel
 {
 
 	private static final long serialVersionUID = 1L;
@@ -58,16 +59,32 @@ public class MeticsPanel extends SDTPanel
 
 
 
+	private static class MtricsPanelHelper
+	{
+		public static final MetricsPanel _instance = new MetricsPanel();
+	}
+
+
+
+
+
+	public static MetricsPanel getInstance()
+	{
+		return MtricsPanelHelper._instance;
+	}
+
+
+
 
 
 	/**
 	 *
 	 */
-	public MeticsPanel(int width_, int height_)
+	private MetricsPanel()
 	{
 		super();
-		_width = width_ - 1;
-		_height = height_;
+		_width = MainWindow.LEFT_PANNEL_WIDTH;
+		_height = MainWindow._height;
 
 		_filterTxt = new JTextField();
 		int ph = _filterTxt.getPreferredSize().height;
@@ -208,6 +225,17 @@ public class MeticsPanel extends SDTPanel
 		boolean displayed = !entry_.getDisaplayed();
 		entry_.setDisaplayed(displayed);
 		DataManager.getInstance().update(entry_.getName(), displayed);
+	}
+
+
+
+
+
+	public void addToTable(String name_)
+	{
+		if (this._tableModel == null)
+			return;
+		_tableModel.addMetricEntry(name_, 0, 0);
 		_tableModel.fireTableDataChanged();
 	}
 }

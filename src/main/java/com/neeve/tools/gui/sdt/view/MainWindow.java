@@ -33,7 +33,7 @@ import javax.swing.JFrame;
 import com.neeve.cli.annotations.Configured;
 import com.neeve.root.RootConfig.ObjectConfig;
 import com.neeve.tools.gui.sdt.view.graphpanel.GraphPanel;
-import com.neeve.tools.gui.sdt.view.metricspanel.MeticsPanel;
+import com.neeve.tools.gui.sdt.view.metricspanel.MetricsPanel;
 import com.neeve.trace.Tracer;
 import com.neeve.trace.Tracer.Level;
 
@@ -50,17 +50,17 @@ public class MainWindow extends JFrame
 	private static final int	MIN_WIDTH			= 800;
 	private static final int	MIN_HEIGHT			= 600;
 
-	private int LEFT_PANNEL_WIDTH = 250;
+	public static int LEFT_PANNEL_WIDTH = 250;
 
 
 	//
 	private Tracer _logger;
 
 	@Configured(property = "main_starting_width", defaultValue = "800")
-	private int _width = MIN_WIDTH;
+	public static int _width = MIN_WIDTH;
 
 	@Configured(property = "main_starting_height", defaultValue = "600")
-	private int _height = MIN_HEIGHT;
+	public static int _height = MIN_HEIGHT;
 
 
 
@@ -171,7 +171,7 @@ public class MainWindow extends JFrame
 		setLayout(null);
 
 		_fileChooser = new FileChooserPanel(LEFT_PANNEL_WIDTH, 100);
-		_metricsChooser = new MeticsPanel(LEFT_PANNEL_WIDTH, 280);
+		_metricsChooser = MetricsPanel.getInstance();
 		_grapher = GraphPanel.getInstance();
 		_panel = new SDTPanel();
 

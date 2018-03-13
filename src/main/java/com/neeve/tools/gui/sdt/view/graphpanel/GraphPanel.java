@@ -19,8 +19,6 @@ package com.neeve.tools.gui.sdt.view.graphpanel;
 
 
 import java.awt.Color;
-import java.awt.event.ActionListener;
-import java.awt.event.MouseListener;
 import java.util.Iterator;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -41,8 +39,8 @@ import org.jfree.data.xy.XYSeriesCollection;
 
 
 
-import com.neeve.tools.gui.sdt.data.DataSet;
-import com.neeve.tools.gui.sdt.data.DataSet.PERCENTILE;
+import com.neeve.tools.gui.sdt.data.DatasetArrays;
+import com.neeve.tools.gui.sdt.data.PERCENTILE;
 import com.neeve.tools.gui.sdt.view.ColorPallette;
 import com.neeve.tools.gui.sdt.view.SDTPanel;
 
@@ -60,11 +58,16 @@ public class GraphPanel extends SDTPanel
 	private JPanel			_theGraph;
 	private String			_chartTitle;
 
-	private ConcurrentHashMap<String, DataSet<Integer>>	_axis;
+	private ConcurrentHashMap<String, DatasetArrays>	_axis;
 	private JFreeChart									_theChart;
 
 
 
+
+
+	/**
+	 *
+	 */
 	public static class GraphPanelHelper
 	{
 		private static final GraphPanel _instance = new GraphPanel();
@@ -124,7 +127,7 @@ public class GraphPanel extends SDTPanel
 	/**
 	 * 
 	 */
-	public void update1(DataSet<Integer> series1_)
+	public void update1(DatasetArrays series1_)
 	{
 		if (series1_ == null)
 			return;
@@ -182,11 +185,11 @@ public class GraphPanel extends SDTPanel
 	public void update()
 	{
 		String key;
-		Iterator<String> itr = this._axis.keySet().iterator();
-		XYSeriesCollection dataset;
+		Iterator<String> itr = _axis.keySet().iterator();
 		int cntr = 0;
-		DataSet<Integer> ds;
+		DatasetArrays ds;
 		XYPlot plot = new XYPlot();
+		XYSeriesCollection dataset;
 		plot.setRangeAxis(0, new NumberAxis("Latency 1"));
 		plot.setRangeAxis(1, new NumberAxis("Latency 2"));
 		plot.setDomainAxis(new NumberAxis("Time"));
@@ -194,7 +197,8 @@ public class GraphPanel extends SDTPanel
 		{
 			key = itr.next();
 			ds = _axis.get(key);
-			dataset = ds.getXYSeriesCollection(PERCENTILE.pct50);
+			dataset = ds.getXYSeriesCollection(PERCENTILE.pct75);
+			
 			plot.setDataset(cntr, dataset);
 			plot.setRenderer(cntr, new StandardXYItemRenderer(StandardXYItemRenderer.LINES));
 			plot.mapDatasetToRangeAxis(cntr, cntr % 2);
@@ -205,6 +209,7 @@ public class GraphPanel extends SDTPanel
 		remove(_theGraph);
 		_theGraph = new ChartPanel(_theChart);
 		add(_theGraph);
+		_theGraph.repaint();
 	}
 
 
@@ -224,12 +229,12 @@ public class GraphPanel extends SDTPanel
 	{
 		Iterator<String> itr = _axis.keySet().iterator();
 		String key;
-		DataSet<Integer> ds;
+		DatasetArrays ds;
 		while (itr.hasNext())
 		{
 			key = itr.next();
 			ds = _axis.get(key);
-			ds.getDataSeries(PERCENTILE.pct50, min_, max_);
+			ds.getDataSeries(PERCENTILE.pct90, min_, max_);
 		}
 	}
 
@@ -240,7 +245,7 @@ public class GraphPanel extends SDTPanel
 	/**
 	 * 
 	 */
-	public void addDataSet(DataSet<Integer> series_)
+	public void addDataSet(DatasetArrays series_)
 	{
 		_axis.putIfAbsent(series_.getSeriesName(), series_);
 	}
@@ -252,7 +257,7 @@ public class GraphPanel extends SDTPanel
 	/**
 	 * 
 	 */
-	public void removeDataSet(DataSet<Integer> series_)
+	public void removeDataSet(DatasetArrays series_)
 	{
 		_axis.remove(series_.getSeriesName());
 	}
